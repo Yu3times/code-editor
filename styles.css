@@ -50,3 +50,21 @@ header {
     font-weight: 700;
 }
 
+.brand .logo {
+    inline-size: 36px;
+    block-size: 36px;
+    border-radius: 10px;
+    background: url("https://programming-ocean.com/code-editors/newlogo.png")
+    center / cover no-repeat;
+}
+
+.title {
+    font-size: clamp(18px, 2vw, 22px);
+}
+
+main {
+    max-width: 1516px;
+    margin-inline: auto;
+    padding: 18px;
+    display: grid;
+}
