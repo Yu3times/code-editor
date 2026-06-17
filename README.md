@@ -3,4 +3,4 @@ A simple web app project of a code editor running on a browser. Based on a FreeC
 
 # TODO:
 
-- Add more section content in the center
+- Style the CSS!
