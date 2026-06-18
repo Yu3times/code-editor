@@ -140,3 +140,7 @@ h2, h3 {
 .btn.ok {
     background: linear-gradient(180deg, #34d399, #22c55e);
 }
+
+.btn.err {
+    background: linear-gradient(180deg, #fb7185, #ef4444);
+}
