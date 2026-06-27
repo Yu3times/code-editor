@@ -122,3 +122,94 @@ $("#webTabs")?.addEventListener("keydown", (e) => {
 });
 
 showPane("html");
+
+function buildwebSrcdoc(withTests=false) {
+
+    const html = ed_html.getValue();
+    const css = ed_css.getValue();
+    const js = ed_js.getValue();
+    const tests = ($("#testArea")?.value || '').trim();
+
+    return `
+    <!DOCTYPE html>
+    <html lang="en" dir="ltr">
+
+        <head>
+            <meta charset="UTF-8">
+            <meta name="viewport" content="width=device-width,initial-scale=1.0">
+
+            <style>
+                ${css}\n</style></head>
+        
+        <body>
+
+            ${html}
+
+            <script>
+                try {
+                    ${js}
+
+                    ${withTests && tests ? `\n/* tests */\n${tests}`: ''}
+                } catch (e) {
+                    console.error(e);
+                }
+            <\/script>
+        </body>
+
+    </html>`;
+}
+
+function runWeb(withTests=false) {
+    preview.src = buildwebSrcdocwebSrcdoc(withTests);
+    log(withTests ? "Run with tests" : "Web proview updated.");
+}
+
+$("#runWeb")?.addEventListener("click", () => runWeb(false));
+
+$("#runTests")?.addEventListener("click", () => runWeb(true));
+
+$("#openPreview")?.addEventListener("click", () => {
+    const src = buildwebSrcdoc(false);
+
+    const w = window.open("about:blank");
+
+    w.document.open();
+    w.document.write(src);
+    w.document.close(); // Close the window to prevent losing resources
+})
+
+function projectJSON() {
+    return {
+        version: 1,
+        kind: 'web-only',
+        assignment: $("#assignment")?.value || "",
+        test: $("#testArea")?.value || "",
+        html: ed_html.getValue(),
+        css: ed_css.getValue(),
+        js: ed_js.getValue()
+    };
+}
+
+function loadProject(obj) {
+    try {
+        if ($('#assignment')) $("#assignment").value = obj.assignment || "";
+
+        if ($('#testArea')) $("#testArea").value = obj.test || "";
+
+        ed_html.setValue(obj.html || "", -1);
+
+        ed_css.setValue(obj.css || "", -1);
+
+        ed_js.setValue(obj.js || "", -1);
+
+        log("Web project loaded.");
+
+    } catch (e) {
+        log("Unable to load project. " + e, "error");
+
+    }
+}
+
+function setDefaultContent() {
+    ed_html.setValue(``);
+}
