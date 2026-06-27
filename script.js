@@ -1,260 +1,317 @@
-// UTILITIES
-const $ = s => document.querySelector(s);
-const $$ = s => document.querySelectorAll(s);
-
+// ================== Utilities ==================
+const $  = s => document.querySelector(s);
+const $$ = s => Array.from(document.querySelectorAll(s));
 const out = $('#output');
-const preview = $("#preview");
-const STORAGE_KEY = "academy-codelab-web";
+const preview = $('#preview');
+const STORAGE_KEY = 'academy-codelab-web';
 
-const escapeHtml = s => 
-    String(s).replace(/[&<>"]/g, c => ({
-        '&': "&amp;",
-        '<': "&lt;",
-        '>': "&gt;",
-        '"': "&quot;"
-    }[c]
-    ));
 
-function log(msg, type="info") {
-    const color = type === "error" ? "var(--err)" : type === "warn" ? "var(--warn)" : "var(--brand)";
-    const time = new Date().toLocaleTimeString();
+const escapeHtml = s =>
+  String(s).replace(/[&<>"]/g, c => ({
 
-    const line = document.createElement("div");
+    '&':'&amp;',
 
-    line.innerHTML = `<span style="color: ${color}">[${time}]</span> ${escapeHtml(msg)}`;
+    '<':'&lt;',
 
-    out.appendChild(line);
-    out.scrollTop = out.scrollHeight;
+    '>':'&gt;',
+
+    '"':'&quot;'
+}[c]
+));
+
+
+function log(msg, type='info'){
+  const color = type==='error' ? 'var(--err)' : type==='warn' ? 'var(--warn)' : 'var(--brand)';
+
+  const time = new Date().toLocaleTimeString();
+
+  const line = document.createElement('div');
+
+  line.innerHTML = `<span style="color:${color}">[${time}]</span> ${escapeHtml(msg)}`;
+
+  out.appendChild(line); out.scrollTop = out.scrollHeight;
 }
 
-function clearOut() {
-    out.innerHTML = "Foobar";
-    console.log("Clicked clear button!");
+
+function clearOut(){ out.innerHTML=''; }
+
+$('#clearOut')?.addEventListener('click', clearOut);
+
+
+// ================== ACE Editors (HTML/CSS/JS) ==================
+function makeEditor(id, mode){
+
+  const ed = ace.edit(id, {
+    theme:'ace/theme/dracula',
+    mode, tabSize:2, useSoftTabs:true, showPrintMargin:false, wrap:true
+  });
+
+
+  ed.session.setUseWrapMode(true);
+  ed.commands.addCommand({
+    name:'run', bindKey:{win:'Ctrl-Enter',mac:'Command-Enter'},
+    exec(){ runWeb(false); }
+  });
+
+
+  ed.commands.addCommand({
+    name:'save', bindKey:{win:'Ctrl-S',mac:'Command-S'},
+    exec(){ saveProject(); }
+  });
+
+
+  return ed;
 }
 
-$("#clearOut")?.addEventListener("click", clearOut);
+const ed_html = makeEditor('ed_html','ace/mode/html');
+const ed_css  = makeEditor('ed_css','ace/mode/css');
+const ed_js   = makeEditor('ed_js','ace/mode/javascript');
 
+// ================== Tabs (robust + a11y) ==================
+const TAB_ORDER = ['html','css','js'];
 
-function makeEditor(id, mode) {
+const wraps   = Object.fromEntries($$('#webEditors .editor-wrap').map(w => [w.dataset.pane, w]));
 
-    const ed = ace.edit(id, {
-        theme: "ace/theme/dracula",
-        mode, tabSize: 2, useSoftTabs: true, showPrintMargin: false, wrap: true
-    });
+const editors = { html: ed_html, css: ed_css, js: ed_js };
 
-    ed.session.setUseWrapMode(true);
-
-    ed.commands.addCommand({
-        name: "run", 
-        bindKey: {
-            win: 'Ctrl-Enter',
-            mac: 'Command-Enter'
-        },
-        exec(){runWeb(false);}
-    });
-
-    ed.commands.addCommand({
-        name: "save",
-        bindKey: {
-            win: 'Ctrl-S',
-            mac: 'Command-S'
-        },
-        exec(){saveProject();}
-    });
+function activePane(){
+  const t = $('#webTabs .tab.active');
+  return t ? t.dataset.pane : 'html';
 }
 
-const ed_html = makeEditor("ed_html", "ace/theme/html");
-const ed_css = makeEditor("ed_css", "ace/theme/css");
-const ed_js = makeEditor("ed_js", "ace/theme/js");
 
-const TAB_ORDER = ["html", "css", "js"];
+function showPane(name){
 
-const wraps = Object.fromEntries($$("#webEditors .editor-wrap")).map(w => [w.dataset.pane, w]);
+  TAB_ORDER.forEach(k => { if(wraps[k]) wraps[k].hidden = (k !== name); });
+  $$('#webTabs .tab').forEach(t => {
+    const on = t.dataset.pane === name;
+    t.classList.toggle('active', on);
+    t.setAttribute('aria-selected', on);
+    t.tabIndex = on ? 0 : -1;
+  });
 
-const editors = {
-    html: ed_html,
-    css: ed_css,
-    js: ed_js,
-};
 
-function activePane() {
-    const t = $("#webTabs .tab.active");
-    return t ? t.dataset.pane: "html";
+  requestAnimationFrame(() => {
+    const ed = editors[name];
+    if(ed && ed.resize){ ed.resize(true); ed.focus(); }
+  });
+
 }
 
-function showPane(name) {
-    TAB_ORDER.forEach(k => {
-        if (wraps[k]) {
 
-        wraps[k].hidden = (k !== name);
-    }});
-
-    $$("#webTabs .tab").forEach(t => {
-        const on = t.dataset.pane === name;
-        t.classList.toggle("active", on);
-        t.setAttribute("aria-selected", on);
-        t.tabIndex = on ? 0 : -1;
-    });
-
-    requestAnimationFrame(() => {
-        const ed = editors[name];
-        if (ed && ed.resize) {
-            ed.resize(true);
-            ed.focus();
-        }
-    });
-}
-
-$("#webTabs")?.addEventListener("click", (e) => {
-    const btn = e.target.closest(".tab");
-    if (!btn) {
-        return;
-    }
-    showPane(btn.dataset.pane);
+$('#webTabs')?.addEventListener('click', (e)=>{
+  const btn = e.target.closest('.tab'); if(!btn) return;
+  showPane(btn.dataset.pane);
 });
 
-$("#webTabs")?.addEventListener("keydown", (e) => {
-    const idx = TAB_ORDER.indexOf(activePane());
-    if (e.key === "ArrowLeft" || e.key === "ArrowRight") {
-        const delta = e.key === "ArrowLeft" ? -1 : 1;
-        showPane(TAB_ORDER[(idx+delta+TAB_ORDER.length) % TAB_ORDER.length]);
-    }
+
+$('#webTabs')?.addEventListener('keydown', (e)=>{
+  const idx = TAB_ORDER.indexOf(activePane());
+  if(e.key==='ArrowLeft' || e.key==='ArrowRight'){
+    const delta = e.key==='ArrowLeft' ? -1 : 1;
+    showPane(TAB_ORDER[(idx+delta+TAB_ORDER.length)%TAB_ORDER.length]);
+    e.preventDefault();
+  }
 });
 
-showPane("html");
+showPane('html');
 
-function buildwebSrcdoc(withTests=false) {
+// ================== Preview ==================
+function buildWebSrcdoc(withTests=false){
+  const html  = ed_html.getValue();
+  const css   = ed_css.getValue();
+  const js    = ed_js.getValue();
+  const tests = ($('#testArea')?.value || '').trim();
 
-    const html = ed_html.getValue();
-    const css = ed_css.getValue();
-    const js = ed_js.getValue();
-    const tests = ($("#testArea")?.value || '').trim();
+  return `<!doctype html>
+  
+  <html lang="en" dir="ltr">
+  
 
-    return `
-    <!DOCTYPE html>
-    <html lang="en" dir="ltr">
 
-        <head>
-            <meta charset="UTF-8">
-            <meta name="viewport" content="width=device-width,initial-scale=1.0">
+<head>
 
-            <style>
-                ${css}\n</style></head>
-        
-        <body>
+<meta charset="utf-8">
 
-            ${html}
+<meta name="viewport" content="width=device-width,initial-scale=1">
 
-            <script>
-                try {
-                    ${js}
 
-                    ${withTests && tests ? `\n/* tests */\n${tests}`: ''}
-                } catch (e) {
-                    console.error(e);
-                }
-            <\/script>
-        </body>
+<style>${css}\n</style></head>
 
-    </html>`;
+<body>${html}
+
+<script>
+
+try{
+
+${js}
+
+${withTests && tests ? `\n/* tests */\n${tests}` : ''}
+
+}catch(e){console.error(e)}<\/script>
+
+</body>
+
+</html>`;
 }
 
-function runWeb(withTests=false) {
-    preview.src = buildwebSrcdocwebSrcdoc(withTests);
-    log(withTests ? "Run with tests" : "Web proview updated.");
+
+function runWeb(withTests=false){
+  preview.srcdoc = buildWebSrcdoc(withTests);
+  log(withTests ? 'Run with tests.' : 'Web preview updated.');
 }
 
-$("#runWeb")?.addEventListener("click", () => runWeb(false));
+$('#runWeb')?.addEventListener('click', ()=>runWeb(false));
 
-$("#runTests")?.addEventListener("click", () => runWeb(true));
 
-$("#openPreview")?.addEventListener("click", () => {
-    const src = buildwebSrcdoc(false);
+$('#runTests')?.addEventListener('click', ()=>runWeb(true));
 
-    const w = window.open("about:blank");
 
-    w.document.open();
-    w.document.write(src);
-    w.document.close(); // Close the window to prevent losing resources
-})
+$('#openPreview')?.addEventListener('click', ()=>{
 
-function projectJSON() {
-    return {
-        version: 1,
-        kind: 'web-only',
-        assignment: $("#assignment")?.value || "",
-        test: $("#testArea")?.value || "",
-        html: ed_html.getValue(),
-        css: ed_css.getValue(),
-        js: ed_js.getValue()
-    };
-}
+  const src = buildWebSrcdoc(false);
 
-function loadProject(obj) {
-    try {
-        if ($('#assignment')) $("#assignment").value = obj.assignment || "";
+  const w = window.open('about:blank');
 
-        if ($('#testArea')) $("#testArea").value = obj.test || "";
-
-        ed_html.setValue(obj.html || "", -1);
-
-        ed_css.setValue(obj.css || "", -1);
-
-        ed_js.setValue(obj.js || "", -1);
-
-        log("Web project loaded.");
-
-    } catch (e) {
-        log("Unable to load project. " + e, "error");
-
-    }
-}
-
-function setDefaultContent() {
-    ed_html.setValue(`<!-- Write your html code here... -->`, -1);
-    ed_css.setValue(`/* Write your css code here... */`, -1);
-    ed_js.setValue(`// Write your js code here...`, -1);
-}
-
-function saveProject() {
-    try {
-        const data = JSON.stringify(projectJSON(), null, 2);
-        localStorage.setItem(STORAGE_KEY, data);
-        const blob = new Blob([data], {type: "application/json"});
-        const a = document.createElement("a");
-        a.href = URL.createObjectURL(blob);
-        a.download = "academy-web.json";
-        a.click(); // this is a programmatic way of clicking on element.
-        log("Saved locally and downloaded JSON file");
-    } catch (e) {
-        log("Unable to save: " + e, "error");
-    }
-}
-
-$("#saveBtn")?.addEventListener("click", saveProject());
-$("#loadBtn")?.addEventListener("click", () => $("#openFile").click());
-$("#openFile")?.addEventListener("change", async (e) => {
-    const f = e.target.files?.[0];
-    if (!f) {
-        return;
-    } 
-    try {
-        const obj = JSON.parse(await f.text());
-        loadProject(obj);
-    } catch (err) {
-        log("Invalid project file", "error");
-    }
+  w.document.open(); w.document.write(src); w.document.close();
 });
 
-try {
-    const cache = localStorage.getItem(STORAGE_KEY);
-    if (cache) {
-        loadProject(JSON.parse(cache));
+// ================== Save / Load (Web-only) ==================
+function projectJSON(){
+  return {
+    version: 1,
+    kind: 'web-only',
+    assignment: $('#assignment')?.value || '',
+    test: $('#testArea')?.value || '',
+    html: ed_html.getValue(),
+    css:  ed_css.getValue(),
+    js:   ed_js.getValue()
+  };
+}
+
+
+function loadProject(obj){
+
+  try{
+
+    if($('#assignment')) $('#assignment').value = obj.assignment || '';
+
+    if($('#testArea'))   $('#testArea').value   = obj.test || '';
+
+    ed_html.setValue(obj.html || '', -1);
+
+    ed_css.setValue(obj.css   || '', -1);
+
+    ed_js.setValue(obj.js     || '', -1);
+
+    log('Web project loaded.');
+
+  }catch(e){ log('Unable to load project: '+e, 'error'); }
+
+}
+
+
+function setDefaultContent(){
+  ed_html.setValue(`<!-- Welcome card -->
+<section class="card" style="max-width:520px;margin:24px auto;padding:18px;text-align:center">
+  <h1>Welcome to the Academy</h1>
+  <p>This example runs locally in the browser.</p>
+  <button id="btn">Try me</button>
+</section>`, -1);
+
+  ed_css.setValue(`body{font-family:system-ui;background:#f7fafc;margin:0}
+h1{color:#0f172a}
+#btn{padding:.75rem 1rem;border:0;border-radius:10px;background:#60a5fa;color:#08111f;font-weight:700}`, -1);
+
+  ed_js.setValue(`document.getElementById('btn').addEventListener('click',()=>alert('Well done!'));
+console.log('Hello from JavaScript!');`, -1);
+}
+
+
+function saveProject(){
+  try{
+    const data = JSON.stringify(projectJSON(), null, 2);
+    localStorage.setItem(STORAGE_KEY, data);
+    const blob = new Blob([data], {type:'application/json'});
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = 'academy-web.json';
+    a.click();
+    log('Saved locally and downloaded JSON file.');
+  }catch(e){ log('Unable to save: '+e, 'error'); }
+}
+
+
+$('#saveBtn')?.addEventListener('click', saveProject);
+$('#loadBtn')?.addEventListener('click', ()=> $('#openFile').click());
+$('#openFile')?.addEventListener('change', async (e)=>{
+  const f = e.target.files?.[0]; if(!f) return;
+  try{ const obj = JSON.parse(await f.text()); loadProject(obj); }
+  catch(err){ log('Invalid project file', 'error'); }
+});
+
+// ================== Initial load ==================
+try{
+  const cache = localStorage.getItem(STORAGE_KEY);
+  if(cache){ loadProject(JSON.parse(cache)); }
+  else { setDefaultContent(); }
+}catch{ setDefaultContent(); }
+
+log('Ready — Web-only Editor (HTML/CSS/JS) ✨');
+
+
+
+function normalizeProject(raw){
+  if (!raw || typeof raw !== 'object') throw new Error('Not an object');
+
+  // accept old/new shapes; fall back to empty strings
+  const html = typeof raw.html === 'string' ? raw.html : (raw.web && raw.web.html) || '';
+  const css  = typeof raw.css  === 'string' ? raw.css  : (raw.web && raw.web.css ) || '';
+  const js   = typeof raw.js   === 'string' ? raw.js   : (raw.web && raw.web.js  ) || '';
+
+  return {
+    version: 1,
+    kind: 'web-only',
+    assignment: typeof raw.assignment === 'string' ? raw.assignment : (raw.task || ''),
+    test:       typeof raw.test       === 'string' ? raw.test       : (raw.tests || ''),
+    html, css, js
+  };
+}
+
+function safeSetValue(id, val){
+  const el = document.getElementById(id);
+  if (el) { el.value = val; }
+  else { log(`Warning: #${id} not found; skipped setting value`, 'warn'); }
+}
+
+function loadProject(raw){
+  const proj = normalizeProject(raw);
+  safeSetValue('assignment', proj.assignment);
+  safeSetValue('testArea',   proj.test);
+  if (typeof ed_html?.setValue === 'function') ed_html.setValue(proj.html, -1);
+  if (typeof ed_css?.setValue  === 'function') ed_css.setValue(proj.css, -1);
+  if (typeof ed_js?.setValue   === 'function') ed_js.setValue(proj.js, -1);
+  log('Project loaded.');
+}
+
+
+// Buttons
+
+
+// ===== Initial restore (after DOM is parsed) =====
+window.addEventListener('DOMContentLoaded', () => {
+  try{
+    const cached = localStorage.getItem(STORAGE_KEY);
+    if (cached) {
+      const obj = JSON.parse(cached);
+      loadProject(obj);
     } else {
-        setDefaultContent();
+      // seed defaults if nothing cached
+      if (!document.getElementById('assignment')) return;
+      // your default seeding function if you have one:
+      // setDefaultContent();
     }
-} catch (e) {
-    setDefaultContent();
-}
-
-log("Ready - Web only Editor (HTML / CSS / JS");
+  }catch(e){
+    log('Skipping auto-restore: ' + e, 'warn');
+  }
+});
