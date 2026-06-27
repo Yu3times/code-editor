@@ -211,5 +211,50 @@ function loadProject(obj) {
 }
 
 function setDefaultContent() {
-    ed_html.setValue(``);
+    ed_html.setValue(`<!-- Write your html code here... -->`, -1);
+    ed_css.setValue(`/* Write your css code here... */`, -1);
+    ed_js.setValue(`// Write your js code here...`, -1);
 }
+
+function saveProject() {
+    try {
+        const data = JSON.stringify(projectJSON(), null, 2);
+        localStorage.setItem(STORAGE_KEY, data);
+        const blob = new Blob([data], {type: "application/json"});
+        const a = document.createElement("a");
+        a.href = URL.createObjectURL(blob);
+        a.download = "academy-web.json";
+        a.click(); // this is a programmatic way of clicking on element.
+        log("Saved locally and downloaded JSON file");
+    } catch (e) {
+        log("Unable to save: " + e, "error");
+    }
+}
+
+$("#saveBtn")?.addEventListener("click", saveProject());
+$("#loadBtn")?.addEventListener("click", () => $("#openFile").click());
+$("#openFile")?.addEventListener("change", async (e) => {
+    const f = e.target.files?.[0];
+    if (!f) {
+        return;
+    } 
+    try {
+        const obj = JSON.parse(await f.text());
+        loadProject(obj);
+    } catch (err) {
+        log("Invalid project file", "error");
+    }
+});
+
+try {
+    const cache = localStorage.getItem(STORAGE_KEY);
+    if (cache) {
+        loadProject(JSON.parse(cache));
+    } else {
+        setDefaultContent();
+    }
+} catch (e) {
+    setDefaultContent();
+}
+
+log("Ready - Web only Editor (HTML / CSS / JS");
