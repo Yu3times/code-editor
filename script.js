@@ -81,3 +81,20 @@ function activePane() {
     const t = $("#webTabs .tab.active");
     return t ? t.dataset.pane: "html";
 }
+
+function showPane(name) {
+    TAB_ORDER.forEach(k => {
+        if (wraps[k]) {
+
+        wraps[k].hidden = (k !== name);
+    }});
+
+    $$("#webTabs .tab").forEach(t => {
+        const on = t.dataset.pane === name;
+        t.classList.toggle("active", on);
+        t.setAttribute("aria-selected", on);
+        t.tabIndex = on ? 0 : -1;
+    });
+
+}
+
