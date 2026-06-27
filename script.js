@@ -96,5 +96,20 @@ function showPane(name) {
         t.tabIndex = on ? 0 : -1;
     });
 
+    requestAnimationFrame(() => {
+        const ed = editors[name];
+        if (ed && ed.resize) {
+            ed.resize(true);
+            ed.focus();
+        }
+    });
 }
+
+$("#webTabs")?.addEventListener("click", (e) => {
+    const btn = e.target.closest(".tab");
+    if (!btn) {
+        return;
+    }
+    showPane(btn.dataset.pane);
+});
 
