@@ -1,7 +1,7 @@
 # code-editor
 A simple web app project of a code editor running on a browser. Based on a FreeCodeCamp Course!
 
-Check it out [here!](https://youtu.be/Vs4hQsDpxww?si=8V_Z4G1aa8JcdVJm)
+Check it out [here!](https://youtu.be/Vs4hQsDpxww?si=7FXiamkFl2a5w6rT)
 
 
 Features:
