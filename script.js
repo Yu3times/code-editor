@@ -1,5 +1,4 @@
 // UTILITIES
-
 const $ = s => document.querySelector(s);
 const $$ = s => document.querySelectorAll(s);
 
@@ -26,4 +25,59 @@ function log(msg, type="info") {
 
     out.appendChild(line);
     out.scrollTop = out.scrollHeight;
+}
+
+function clearOut() {
+    out.innerHTML = "Foobar";
+    console.log("Clicked clear button!");
+}
+
+$("#clearOut")?.addEventListener("click", clearOut);
+
+
+function makeEditor(id, mode) {
+
+    const ed = ace.edit(id, {
+        theme: "ace/theme/dracula",
+        mode, tabSize: 2, useSoftTabs: true, showPrintMargin: false, wrap: true
+    });
+
+    ed.session.setUseWrapMode(true);
+
+    ed.commands.addCommand({
+        name: "run", 
+        bindKey: {
+            win: 'Ctrl-Enter',
+            mac: 'Command-Enter'
+        },
+        exec(){runWeb(false);}
+    });
+
+    ed.commands.addCommand({
+        name: "save",
+        bindKey: {
+            win: 'Ctrl-S',
+            mac: 'Command-S'
+        },
+        exec(){saveProject();}
+    });
+}
+
+const ed_html = makeEditor("ed_html", "ace/theme/html");
+const ed_css = makeEditor("ed_css", "ace/theme/css");
+const ed_js = makeEditor("ed_js", "ace/theme/js");
+
+const TAB_ORDER = ["html", "css", "js"];
+
+const wraps = Object.fromEntries($$("#webEditors .editor-wrap")).map(w => [w.dataset.pane, w]);
+
+const editors = {
+    html: ed_html,
+    css: ed_css,
+    js: ed_js,
+};
+
+function activePane() {
+    const t = $("#webTabs .tab.active");
+    return t ? t.dataset.pane: "html";
 }
